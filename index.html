@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Conversational Image Recognition Chatbot</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.2.228/pdf.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/showdown/1.9.1/showdown.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@2.4.0/dist/tesseract.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script type="importmap">
+    {
+      "imports": {
+        "@google/generative-ai": "https://esm.run/@google/generative-ai"
+      }
+    }
+  </script>
+  <link rel="stylesheet" type="text/css" href="styles.css">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+    }
+
+    .chat-container {
+      flex: 1;
+      padding: 10px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      height: calc(100vh - 120px);
+    }
+
+    .input-container {
+      display: flex;
+      padding: 10px;
+      border-top: 1px solid #ddd;
+      background-color: #f9f9f9;
+      align-items: center;
+    }
+
+    #fileInput {
+      display: none;
+    }
+
+    #chooseFileButton {
+      margin-right: 10px;
+      cursor: pointer;
+    }
+
+    #questionInput {
+      flex: 1;
+      padding: 10px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+      margin-right: 10px;
+    }
+
+    #sendButton {
+      background-color: #007bff;
+      color: white;
+      padding: 10px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    #sendButton:hover {
+      background-color: #0056b3;
+    }
+
+    .message {
+      margin: 10px 0;
+      display: flex;
+      align-items: flex-start;
+    }
+
+    .message.bot {
+      justify-content: flex-start;
+    }
+
+    .message.user {
+      justify-content: flex-end;
+    }
+
+    .message .content {
+      max-width: 60%;
+      padding: 10px;
+      border-radius: 10px;
+    }
+
+    .message.bot .content {
+      background-color: #f1f1f1;
+      text-align: left;
+    }
+
+    .message.user .content {
+      background-color: #007bff;
+      color: white;
+      text-align: left;
+    }
+
+    .message img {
+      background-color: none;
+      width: 300px;
+      height: 100%;
+      border-radius: 10px;
+      margin-right: 10px;
+    }
+
+    .default-message {
+      text-align: center;
+      margin-top: auto;
+      margin-bottom: auto;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    @media (max-width: 768px) {
+      .message .content {
+        max-width: 80%;
+      }
+
+      .message img {
+        width: 100%;
+        height: auto;
+      }
+
+      .chat-container {
+        padding: 5px;
+      }
+
+      .input-container {
+        flex-direction: column;
+      }
+
+      #questionInput {
+        margin-bottom: 10px;
+        width: 100%;
+      }
+
+      #sendButton {
+        width: 100%;
+        padding: 15px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="default-message" id="defaultMessage">
+    <h1>Conversational Image Recognition Chatbot</h1>
+    <p>Upload an image and ask questions about it.</p>
+  </div>
+
+  <div class="chat-container" id="chatContainer">
+    <!-- Chat messages will be appended here -->
+  </div>
+
+  <div class="input-container">
+    <label id="chooseFileButton" for="fileInput">
+      <i class="fa fa-image"></i> Upload Image
+    </label>
+    <input type="file" id="fileInput" accept="image/png, image/jpeg">
+    <input id="questionInput" type="text" placeholder="Ask your question here">
+    <button id="sendButton">Send</button>
+  </div>
+
+  <script type="module">
+    import { GoogleGenerativeAI, HarmBlockThreshold, HarmCategory } from "@google/generative-ai";
+
+    const API_KEY = "AIzaSyBeZqoS317cinZC208WPjvF6u4CrhabU3I";
+    let genAI;
+    let model;
+    let uploadedImage = null;
+
+    async function createModel(modelType = "gemini-1.5-flash") {
+      genAI = new GoogleGenerativeAI(API_KEY);
+      model = genAI.getGenerativeModel({
+        model: modelType,
+        safetySettings: [
+          { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_NONE },
+          { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_NONE },
+          { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_NONE },
+          { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_NONE }
+        ]
+      });
+    }
+
+    await createModel();
+
+    document.getElementById('sendButton').addEventListener('click', async () => {
+      const prompt = document.getElementById('questionInput').value;
+      if (!uploadedImage && !prompt.trim()) {
+        addBotMessage('Please upload an image and ask a question.');
+        return;
+      }
+
+      addUserMessage(prompt);
+
+      if (uploadedImage) {
+        const imageParts = [await fileToGenerativePart(uploadedImage)];
+        const result = await model.generateContent([prompt, ...imageParts]);
+        const response = await result.response;
+        const text = await response.text();
+        addBotMessage(text);
+      }
+
+      document.getElementById('questionInput').value = '';
+    });
+
+    document.getElementById('fileInput').addEventListener('change', async (event) => {
+      const file = event.target.files[0];
+      if (file && file.type.startsWith('image/')) {
+        uploadedImage = file;
+        displayUploadedImage(file);
+        document.getElementById('defaultMessage').classList.add('hidden');
+      } else {
+        addBotMessage('Please upload only image files (.png, .jpg, .jpeg).');
+      }
+    });
+
+    function displayUploadedImage(file) {
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        addUserMessage('<img src="' + e.target.result + '" alt="Uploaded Image">');
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function addUserMessage(message) {
+      const chatContainer = document.getElementById('chatContainer');
+      const messageElement = document.createElement('div');
+      messageElement.classList.add('message', 'user');
+      messageElement.innerHTML = '<div class="content">' + message + '</div>';
+      chatContainer.appendChild(messageElement);
+      chatContainer.scrollTop = chatContainer.scrollHeight;  // Scroll to the bottom
+    }
+
+    function addBotMessage(message) {
+      const chatContainer = document.getElementById('chatContainer');
+      const messageElement = document.createElement('div');
+      messageElement.classList.add('message', 'bot');
+      messageElement.innerHTML = '<div class="content">' + message + '</div>';
+      chatContainer.appendChild(messageElement);
+      chatContainer.scrollTop = chatContainer.scrollHeight;  // Scroll to the bottom
+    }
+
+    function scrollToBottom(element) {
+      element.scrollTop = element.scrollHeight;
+    }
+
+    async function fileToGenerativePart(file) {
+      const base64EncodedDataPromise = new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result.split(',')[1]);
+        reader.readAsDataURL(file);
+      });
+      return {
+        inlineData: { data: await base64EncodedDataPromise, mimeType: file.type }
+      };
+    }
+  </script>
+</body>
+
+</html>
