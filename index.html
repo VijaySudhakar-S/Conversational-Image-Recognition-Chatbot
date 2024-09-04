@@ -36,6 +36,7 @@
       flex-direction: column;
       justify-content: flex-start;
       height: calc(100vh - 120px);
+      line-height: 20px;
     }
 
     .input-container {
@@ -113,7 +114,7 @@
     }
 
     .message img {
-      max-width: 100%;
+      max-width: 290px;
       height: auto;
       border-radius: 10px;
       margin-right: 10px;
@@ -250,13 +251,30 @@
     }
 
     function addBotMessage(message) {
-      const chatContainer = document.getElementById('chatContainer');
-      const messageElement = document.createElement('div');
-      messageElement.classList.add('message', 'bot');
-      messageElement.innerHTML = '<div class="content">' + message + '</div>';
-      chatContainer.appendChild(messageElement);
-      chatContainer.scrollTop = chatContainer.scrollHeight;  // Scroll to the bottom
-    }
+  const chatContainer = document.getElementById('chatContainer');
+  const messageElement = document.createElement('div');
+  messageElement.classList.add('message', 'bot');
+
+  // Replace markdown-like headings (#) with HTML tags
+  let formattedMessage = message
+    .replace(/^# (.+)/gm, '<h1>$1</h1>')  // Convert # to <h1>
+    .replace(/^## (.+)/gm, '<h2>$1</h2>')  // Convert ## to <h2>
+    .replace(/^### (.+)/gm, '<h3>$1</h3>') // Convert ### to <h3>
+    .replace(/^- (.+)/gm, '<li>$1</li>')  // Convert - to <li>
+    .replace(/(?:\*\*)([^*]+)(?:\*\*)/g, '<strong>$1</strong>')  // Convert **text** to bold
+    .replace(/\n/g, '<br>');  // Convert line breaks
+
+  // Wrap <li> elements in <ul> tags if they exist
+  if (formattedMessage.includes('<li>')) {
+    formattedMessage = '<ul>' + formattedMessage + '</ul>';
+  }
+
+  messageElement.innerHTML = '<div class="content">' + formattedMessage + '</div>';
+  chatContainer.appendChild(messageElement);
+  chatContainer.scrollTop = chatContainer.scrollHeight;  // Scroll to the bottom
+}
+
+
 
     async function fileToGenerativePart(file) {
       const base64EncodedDataPromise = new Promise((resolve) => {
@@ -272,3 +290,4 @@
 </body>
 
 </html>
+
