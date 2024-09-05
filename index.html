@@ -26,8 +26,8 @@
       margin: 0;
       padding: 0;
       overflow: hidden;
-      background-color: #e0f7fa;
-      /* Sky blue background */
+      background: rgb(224, 247, 250);
+      background: linear-gradient(62deg, rgba(224, 247, 250, 1) 0%, rgba(132, 241, 255, 1) 89%);
     }
 
     .chat-container {
@@ -40,9 +40,9 @@
       height: calc(100vh - 120px);
       line-height: 20px;
       background-color: #ffffff;
-      /* White background for chat area */
       border-radius: 10px;
-      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      background: rgb(224, 247, 250);
+      background: linear-gradient(62deg, rgba(224, 247, 250, 1) 0%, rgba(132, 241, 255, 1) 89%);
     }
 
     .chat-container li,
@@ -54,12 +54,10 @@
 
     .input-container {
       display: flex;
-      padding: 10px;
-      border-top: 1px solid #ddd;
-      background-color: #ffffff;
+      padding: 30px 20px;
+      background-color: #dffefe;
       align-items: center;
       position: relative;
-      box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
     }
 
     #fileInput {
@@ -69,9 +67,11 @@
     #chooseFileButton {
       margin-right: 10px;
       cursor: pointer;
-      font-size: 1.2em;
-      color: #0068d6;
-      /* Sky blue color */
+      font-size: 1em;
+      color: white;
+      background-color: black;
+      padding: 7px 10px;
+      border-radius: 5px;
     }
 
     #questionInput {
@@ -84,8 +84,7 @@
     }
 
     #sendButton {
-      background-color: #007bff;
-      /* Sky blue button */
+      background-color: #000000;
       color: white;
       padding: 10px 15px;
       border: none;
@@ -96,7 +95,7 @@
     }
 
     #sendButton:hover {
-      background-color: #0056b3;
+      background-color: rgb(76, 76, 76);
       /* Darker blue on hover */
     }
 
@@ -123,15 +122,13 @@
     }
 
     .message.bot .content {
-      background-color: #e0f7fa;
-      /* Light sky blue for bot messages */
+      background-color: rgba(255, 255, 255, 0.603);
+      padding: 10px;
       text-align: left;
     }
 
     .message.user .content {
-      background-color: #005fc4;
-      /* Sky blue for user messages */
-      color: white;
+      background-color: rgba(255, 255, 255, 0.603);
       text-align: left;
     }
 
@@ -139,7 +136,6 @@
       max-width: 290px;
       height: auto;
       border-radius: 10px;
-      margin-right: 10px;
     }
 
     .default-message {
@@ -149,12 +145,15 @@
       flex-direction: column;
       justify-content: center;
       height: 100%;
-      color: #0063cd;
     }
 
     .default-message h1 {
-      font-size: 2em;
-      margin-bottom: 10px;
+      font-size: 2.3rem;
+      margin-bottom: 20px;
+      background: #4F85DF;
+      background: linear-gradient(to right, #23538A 0%, #4F85DF 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
     }
 
     .default-message p {
@@ -350,4 +349,3 @@
 </body>
 
 </html>
-
